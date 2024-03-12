@@ -1,11 +1,16 @@
 import sys
-import copy
 from BitVector import *
 
 # Homework Number: 4
 # Name: Christopher Chan
 # ECN Login: chan328   
 # Due Date: 2/13/24
+
+'''
+COMMAND LINE INPUT Format:
+Encryption: python3 AES.py -e message.txt key.txt encrypted.txt
+Decryption: python3 AES.py -d encrypted.txt key.txt decrypted.txt
+'''
 
 class AES ():
 # class constructor - when creating an AES object , the
@@ -121,12 +126,10 @@ class AES ():
         key_schedule = []
 
         for wordIndex,word in enumerate(key_words):
-            #print(type(word))
             keyword_in_ints = []
             for i in range(4):
                 keyword_in_ints.append(word[i*8:i*8+8].intValue()) 
-            #if word_index % 4 == 0: print("\n")
-            #print("word %d:  %s" % (word_index, str(keyword_in_ints)))
+
             key_schedule.append(keyword_in_ints)
 
         num_rounds = None
@@ -164,8 +167,7 @@ class AES ():
 
         return state
 
-    def mixColumns(self, state):
-        
+    def mixColumns(self, state):        
         result = BitVector(size = 0)
         for j in range(4):
             column = [state[i][j] for i in range(4)]
@@ -179,34 +181,9 @@ class AES ():
 
         state = self.bVToMatrix(result)
 
-        '''
-        stateCpy = copy.deepcopy(state) #copy the entire list of bvs
-        factor = [BitVector(hexstring="02"), BitVector(hexstring="03"), BitVector(hexstring="01"), BitVector(hexstring="01")]
-        for j in range(4):
-            for i in range(4):
-                temp = BitVector(size=8)
-
-                for k in range(4):
-                    temp ^= stateCpy[k][j].gf_multiply_modular(factor[k - i], self.AES_modulus, 8)
-
-                state[i][j] = temp
-        '''
         return state
     
-    def inverseMixColumns(self, state):
-        '''
-        stateCpy = copy.deepcopy(state)
-        factor = [BitVector(hexstring="0E"), BitVector(hexstring="0B"), BitVector(hexstring="0D"), BitVector(hexstring="09")]
-        for j in range(4):
-            for i in range(4):
-                temp = BitVector(size=8)
-
-                for k in range(4):  
-                    temp ^= stateCpy[k][j].gf_multiply_modular(factor[k - i], self.AES_modulus, 8)
-
-                state[i][j] = temp
-        '''
-        
+    def inverseMixColumns(self, state):        
         result = BitVector(size = 0)
         for j in range(4):
             column = [state[i][j] for i in range(4)]
@@ -261,21 +238,11 @@ class AES ():
             for j in range(1, 14):
                 state = self.bVToMatrix(bitvec)
                 state = self.subBytes(state)
-                #combined = self.matrixToBV(state)
-                #print("step 3:" + combined.get_bitvector_in_hex())
-
                 state = self.shiftRows(state)
-                #combined = self.matrixToBV(state)
-                #print("step 4:" + combined.get_bitvector_in_hex())
-
                 state = self.mixColumns(state)
-                #combined = self.matrixToBV(state)
-                #print("step 5:" + combined.get_bitvector_in_hex())
-
                 roundNum = j
                 bitvec = self.matrixToBV(state)
                 bitvec ^= self.roundKeys[roundNum]
-                #print("step 6:" + bitvec.get_bitvector_in_hex())
             
             #final round
             state = self.bVToMatrix(bitvec)
@@ -286,11 +253,6 @@ class AES ():
             bitvec ^= self.roundKeys[roundNum] 
 
             encryptedText = encryptedText + bitvec.get_hex_string_from_bitvector()
-            #print("block" + encryptedText) #doesnt print for some reason :|
-            
-
-        #encryptedText = encryptedText.get_hex_string_from_bitvector()
-        #print("final:" + encryptedText) #doesnt print for some reason :|
 
         # Write ciphertext bitvector to the output file:
         FILEOUT = open(ciphertext, 'w')                                              
@@ -328,54 +290,28 @@ class AES ():
             for j in range(1, 14): #
                 state = self.bVToMatrix(bitvec)
                 state = self.inverseShiftRows(state)
-                combined = self.matrixToBV(state)
-                #print("step 3:" + combined.get_bitvector_in_hex())
-                
                 state = self.inverseSubBytes(state)
-                combined = self.matrixToBV(state)
-                #print("step 4:" + combined.get_bitvector_in_hex())
-
                 #roundNum = 13 - j
                 bitvec = self.matrixToBV(state)
-                bitvec ^= self.roundKeys[14 - j]
-                combined = self.matrixToBV(state)
-                #print("step 5:" + combined.get_bitvector_in_hex())
-                
+                bitvec ^= self.roundKeys[14 - j]                
                 state = self.bVToMatrix(bitvec)
                 state = self.inverseMixColumns(state)
                 bitvec = self.matrixToBV(state)
-                #print("step 6:" + bitvec.get_bitvector_in_hex())
 
                 #final round case
                 if j == 13:
                     state = self.bVToMatrix(bitvec)
                     state = self.inverseShiftRows(state)
                     state = self.inverseSubBytes(state)
-                    #roundNum = 0
                     bitvec = self.matrixToBV(state)
                     bitvec ^= self.roundKeys[0]
                     break
             
-            '''
-            #final round
-            state = self.bVToMatrix(bitvec)
-            state = self.inverseShiftRows(state)
-            state = self.inverseSubBytes(state)
-            roundNum = 0
-            bitvec = self.matrixToBV(state)
-            bitvec ^= self.roundKeys[roundNum]
-            '''
-            
             decryptedText = decryptedText + bitvec
-            FILEOUT.write(bitvec.get_bitvector_in_ascii())
-            #bitvec.write_to_file(FILEOUT) 
-            #print("block: " + bitvec.get_hex_string_from_bitvector())
-            
-        #print("final: " + decryptedText.get_bitvector_in_ascii())
 
-        # Write ciphertext bitvector to the output file:
-        
-        #FILEOUT.write(decryptedText.get_bitvector_in_ascii())                                                                                                          
+            # Write ciphertext bitvector to the output file:
+            FILEOUT.write(bitvec.get_bitvector_in_ascii())
+                                                                                                  
         FILEOUT.close()
 
 if __name__ == "__main__":
